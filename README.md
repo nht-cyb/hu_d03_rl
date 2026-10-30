@@ -48,6 +48,9 @@ Click a GIF to open the full-length 1280×720 video.
 All three policies were trained for 10,000 PPO iterations with 4,096 parallel environments on one
 Kaggle GPU (about 6–8 h each).
 
+The full training outputs (every checkpoint, TensorBoard logs, configs) are in the
+[training-results-v1 release](https://github.com/nht-cyb/hu_d03_rl/releases/tag/training-results-v1).
+
 | Run | Task | Training time | Final mean reward | Final episode length |
 |---|---|---|---|---|
 | Locomotion | `Mjlab-Velocity-Flat-LimX-HU-D03` | 5 h 56 min | 61.2 | 993 / 1000 steps |

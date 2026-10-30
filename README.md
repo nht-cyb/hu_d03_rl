@@ -11,7 +11,7 @@ Click a GIF to open the full-length 1280×720 video.
 
 ## Quick start
 
-1. **Train in the cloud (no local GPU needed).** Open one of the notebooks below in Colab or Kaggle,
+1. **Train in the cloud (no local GPU needed).** Import one of the notebooks below into Kaggle,
    pick a GPU (T4 is enough), and run all cells. Each notebook installs mjlab, installs this package,
    runs a stand test, trains, then exports an ONNX policy, training curves and videos.
 2. **Check the robot model locally on CPU.** Install the package and run the stand test:
@@ -124,10 +124,10 @@ Reference motion for the whole medley: [results/videos/medley_reference.mp4](res
 
 ![medley curves](results/curves/medley_curves.png)
 
-## Train on Colab / Kaggle
+## Train on Kaggle
 
-Upload [notebooks/train_hu_d03.ipynb](notebooks/train_hu_d03.ipynb) to Colab
-(*File → Upload notebook*) or Kaggle (*Create → New Notebook → File → Import Notebook*),
+Import [notebooks/train_hu_d03.ipynb](notebooks/train_hu_d03.ipynb) into Kaggle
+(*Create → New Notebook → File → Import Notebook*),
 pick a **T4** GPU, and run the cells top to bottom. The notebook installs mjlab,
 writes this package, checks that the robot stands, and then trains:
 
@@ -139,7 +139,7 @@ writes this package, checks that the robot stands, and then trains:
 | `Mjlab-Tracking-Flat-LimX-HU-D03-No-State-Estimation` | mimic without base position/velocity in the observations |
 
 For long unattended runs on Kaggle (*Save Version → Save & Run All*, stops itself before the 12 h limit,
-resumes from the previous version's output) there are Kaggle-only notebooks:
+resumes from the previous version's output) there are dedicated notebooks:
 
 - [notebooks/locomotion/kaggle_hu_d03_locomotion.ipynb](notebooks/locomotion/kaggle_hu_d03_locomotion.ipynb): `Mjlab-Velocity-Flat-LimX-HU-D03`
 - [notebooks/mimic/kaggle_hu_d03_mimic.ipynb](notebooks/mimic/kaggle_hu_d03_mimic.ipynb): `Mjlab-Tracking-Flat-LimX-HU-D03`

@@ -7,7 +7,8 @@ LimX Dynamics HU_D03 locomotion and mimic (motion tracking) tasks for
 |:---:|:---:|:---:|
 | [![locomotion](results/gifs/locomotion.gif)](results/videos/locomotion.mp4) | [![ballet](results/gifs/ballet_mimic.gif)](results/videos/ballet_mimic.mp4) | [![medley](results/gifs/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.gif)](results/videos/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.mp4) |
 
-Click a GIF to open the full-length 1280×720 video.
+Click a GIF to open the full-length 1280×720 video. All result videos are also in this
+[Google Drive folder](https://drive.google.com/drive/folders/174nsOWcwJ5Hc9CvAaFgBzb3cu3Fmen8P?usp=drive_link).
 
 ## Quick start
 
@@ -65,6 +66,7 @@ python scripts/stand_test.py --seconds 10
 All three policies were trained for 10,000 PPO iterations with 4,096 parallel environments on one
 Kaggle GPU (about 6–8 h each).
 
+Result videos: [results/videos/](results/videos/) or the [Google Drive folder](https://drive.google.com/drive/folders/174nsOWcwJ5Hc9CvAaFgBzb3cu3Fmen8P?usp=drive_link).
 The full training outputs (every checkpoint, TensorBoard logs, configs) are in the
 [training-results-v1 release](https://github.com/nht-cyb/hu_d03_rl/releases/tag/training-results-v1).
 
@@ -98,8 +100,8 @@ logs over the 50 iterations before each checkpoint ([eval/rows.json](eval/rows.j
 ### Mimic: ballet turn
 
 A single BONES-SEED clip (`dance_basic_turn_v2_360_R_loop_001__A323`, found with `SEED_SEARCH = "ballet"`),
-retargeted from the Unitree G1 to the HU_D03. At the end of training no episode is cut short by a tracking
-failure; the mean body position error is about 4 cm.
+retargeted from the Unitree G1 to the HU_D03. At the end of training fewer than 1 % of episodes are cut short
+by a tracking failure, and the mean body position error is about 4 cm (see [Mimic evaluation](#mimic-evaluation)).
 
 | Reference motion | Policy in simulation |
 |:---:|:---:|
@@ -110,8 +112,8 @@ Training curves: [results/curves/ballet_curves.png](results/curves/ballet_curves
 ### Mimic: dance medley
 
 Six clips joined into one continuous motion with `scripts/make_medley_hu_d03.py` (1 s blends) and learned by
-a single policy, warm-started from an earlier tracking checkpoint. Mean body position error is about 5 cm;
-about 3 % of episodes end early when a hand or foot drifts too far from the reference.
+a single policy, warm-started from an earlier tracking checkpoint. Mean body position error is about 6 cm;
+about 5 % of episodes end early, mostly when a hand or foot drifts too far from the reference.
 Segment boundaries are in [results/policies/hu_d03_tracking_medley6.segments.json](results/policies/hu_d03_tracking_medley6.segments.json).
 
 | 1. Walk | 2. Hip hop | 3. Mambo |
@@ -123,6 +125,37 @@ Segment boundaries are in [results/policies/hu_d03_tracking_medley6.segments.jso
 Reference motion for the whole medley: [results/videos/medley_reference.mp4](results/videos/medley_reference.mp4).
 
 ![medley curves](results/curves/medley_curves.png)
+
+### Mimic evaluation
+
+The same per-checkpoint analysis as for locomotion, for both mimic runs: each point averages the 50 training
+iterations before a checkpoint (4,096 environments). mjlab logs the tracking errors when an episode ends, which is
+almost always at the 10 s time-out, so they describe the robot at the end of a full episode.
+
+![mimic tracking](eval/mimic_tracking.png)
+
+| Run | Body position error | Body orientation error | Joint angle error (RMS) | Torso drift | Ended early |
+|---|---|---|---|---|---|
+| Ballet turn, iteration 9,999 | 4.1 cm | 6.5° | 12.8° | 13.4 cm | 0.8 % |
+| Dance medley, iteration 9,999 | 5.8 cm | 10.0° | 24.1° | 16.0 cm | 5.2 % |
+
+- **Body position / orientation error:** mean over the tracked links, measured relative to the torso, so it is
+  the pose error with global drift removed.
+- **Joint angle error:** the L2 norm over the 31 joints divided by √31.
+- **Torso drift:** distance between the robot's torso and the reference torso in the world.
+- **Ended early:** episodes stopped by a tracking-failure termination (torso position or orientation,
+  hand or foot position) as a share of all ended episodes.
+
+The policies match link poses more closely than joint angles: the ballet joint error even rises slightly after
+iteration 5,000 while the body errors keep falling. The motions are copied from the G1 joint by joint, so the
+HU_D03 can reach the reference poses with different joint angles.
+
+Rebuild the plot and [eval/mimic_rows.json](eval/mimic_rows.json) from the release zips:
+
+```bash
+cd eval
+python evaluate_mimic.py ballet=mimic_ballet_full_run.zip medley=mimic_medley6_full_run.zip
+```
 
 ## Train on Kaggle
 
@@ -181,7 +214,7 @@ hu_d03_rl/
 │   ├── nb_common.py
 │   ├── locomotion/              # long Kaggle locomotion run
 │   └── mimic/                   # long Kaggle mimic run (clip or medley)
-├── eval/                        # per-checkpoint velocity-tracking analysis
+├── eval/                        # per-checkpoint locomotion + mimic analysis
 ├── results/
 │   ├── videos/                  # full-length rollouts and references
 │   ├── gifs/                    # README previews
@@ -201,3 +234,60 @@ Details worth knowing:
   so one tracking policy learns several dances (`MEDLEY` in the Kaggle mimic notebook).
 - `csv_to_npz_hu_d03.py` writes a local file, so no W&B account is needed.
 - After editing `src/` or `scripts/`, re-run the notebook builders (see above).
+
+## Citation
+
+If you use this code or the trained policies, please cite this repository:
+
+```bibtex
+@misc{nguyen2026hud03rl,
+  title        = {{HU\_D03 RL}: Locomotion and Motion-Tracking Policies for the {LimX} {HU\_D03} Humanoid in mjlab},
+  author       = {Nguyen, Huyen Trang},
+  year         = {2026},
+  howpublished = {\url{https://github.com/nht-cyb/hu_d03_rl}}
+}
+```
+
+This work builds on the following projects and datasets. Please cite them as well:
+
+```bibtex
+@misc{zakka2026mjlab,
+  title         = {mjlab: A Lightweight Framework for GPU-Accelerated Robot Learning},
+  author        = {Kevin Zakka and Qiayuan Liao and Brent Yi and Louis Le Lay and Koushil Sreenath and Pieter Abbeel},
+  year          = {2026},
+  eprint        = {2601.22074},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.RO},
+  url           = {https://arxiv.org/abs/2601.22074}
+}
+
+@misc{limx_humanoid_description,
+  title        = {LimX Humanoid Description: URDF, MJCF and USD Models for LimX Humanoid Robots},
+  author       = {{LimX Dynamics}},
+  year         = {2025},
+  howpublished = {\url{https://github.com/limxdynamics/humanoid-description}}
+}
+
+@article{liao2025beyondmimic,
+  title   = {BeyondMimic: From Motion Tracking to Versatile Humanoid Control via Guided Diffusion},
+  author  = {Qiayuan Liao and Takara E. Truong and Xiaoyu Huang and Guy Tevet and Koushil Sreenath and C. Karen Liu},
+  journal = {arXiv preprint arXiv:2508.08241},
+  year    = {2025}
+}
+
+@article{harvey2020robust,
+  title   = {Robust Motion In-betweening},
+  author  = {F{\'e}lix G. Harvey and Mike Yurick and Derek Nowrouzezahrai and Christopher Pal},
+  journal = {ACM Transactions on Graphics},
+  volume  = {39},
+  number  = {4},
+  year    = {2020}
+}
+```
+
+- **mjlab:** the simulation and training framework. Its tracking task re-implements BeyondMimic.
+- **LimX humanoid-description:** the HU_D03 robot model.
+- **LAFAN1** (Harvey et al.): motion clips, used through the
+  [G1 retargeted LAFAN1 dataset](https://huggingface.co/datasets/lvhaidong/LAFAN1_Retargeting_Dataset).
+- **BONES-SEED:** the dance clips, from [huggingface.co/datasets/bones-studio/seed](https://huggingface.co/datasets/bones-studio/seed).
+  Follow the dataset's license and citation terms.

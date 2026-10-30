@@ -43,6 +43,23 @@ Click a GIF to open the full-length 1280×720 video.
 
    Read [Modelling choices](#modelling-choices-to-know-before-deploying) before running a policy on the real robot.
 
+## Run the CPU checks locally
+
+Clone the robot description into `third_party/` (or set `HU_D03_DESCRIPTION_DIR`), then with any Python that has `mujoco` 3.16:
+
+```bash
+python scripts/stand_test.py --seconds 10
+```
+
+## Modelling choices to know before deploying
+
+- The policy commands serial `ankle_pitch/roll` and `waist_roll/pitch` joints. The real robot drives these
+  through two motors each (A/B), so the targets must be converted to A/B motor commands on the robot.
+  The linkage mass (about 1.4 kg) is added to the parent bodies.
+- LimX does not publish PD gains. They follow mjlab's G1 rule (10 Hz, damping ratio 2 for each joint's
+  armature). With 5 Hz the robot does not hold its pose. Actions are scaled by 0.25 rad.
+- Mimic data is G1 motion copied to the HU_D03 joint by joint, so foot and hand positions are approximate.
+
 ## Results
 
 All three policies were trained for 10,000 PPO iterations with 4,096 parallel environments on one
@@ -184,20 +201,3 @@ Details worth knowing:
   so one tracking policy learns several dances (`MEDLEY` in the Kaggle mimic notebook).
 - `csv_to_npz_hu_d03.py` writes a local file, so no W&B account is needed.
 - After editing `src/` or `scripts/`, re-run the notebook builders (see above).
-
-## Run the CPU checks locally
-
-Clone the robot description into `third_party/` (or set `HU_D03_DESCRIPTION_DIR`), then with any Python that has `mujoco` 3.16:
-
-```bash
-python scripts/stand_test.py --seconds 10
-```
-
-## Modelling choices to know before deploying
-
-- The policy commands serial `ankle_pitch/roll` and `waist_roll/pitch` joints. The real robot drives these
-  through two motors each (A/B), so the targets must be converted to A/B motor commands on the robot.
-  The linkage mass (about 1.4 kg) is added to the parent bodies.
-- LimX does not publish PD gains. They follow mjlab's G1 rule (10 Hz, damping ratio 2 for each joint's
-  armature). With 5 Hz the robot does not hold its pose. Actions are scaled by 0.25 rad.
-- Mimic data is G1 motion copied to the HU_D03 joint by joint, so foot and hand positions are approximate.

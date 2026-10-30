@@ -137,22 +137,52 @@ python notebooks/locomotion/build_kaggle_locomotion.py
 python notebooks/mimic/build_kaggle_mimic.py
 ```
 
-## Layout
+## Code structure
 
-- `src/hu_d03_mjlab/robot/hu_d03_spec.py`: loads the LimX MJCF and makes a serial-joint model (removes the
-  ankle/waist parallel linkages, names collision geoms, adds foot sites and IMU sensors). Needs only `mujoco`.
-- `src/hu_d03_mjlab/robot/hu_d03_params.py`: armatures (from the LimX SRDF), effort limits, PD gains, home pose.
-- `src/hu_d03_mjlab/robot/hu_d03_constants.py`: mjlab robot config.
-- `src/hu_d03_mjlab/tasks/`: velocity and tracking task configs, registered through the `mjlab.tasks` entry point.
-- `scripts/stand_test.py`: CPU stand test in plain MuJoCo.
-- `scripts/retarget_g1_to_hu_d03.py`: converts G1 LAFAN1 motion CSVs to HU_D03 CSVs (joint-space transfer).
-- `scripts/seed_g1_to_lafan_csv.py`: converts a BONES-SEED G1 CSV (cm, Euler degrees, 120 fps) to the LAFAN1 G1 layout.
-- `scripts/make_medley_hu_d03.py`: joins several HU_D03 CSVs into one continuous clip (aligned heading and position,
-  smoothstep blends) so one tracking policy learns several dances (`MEDLEY` in the Kaggle mimic notebook).
-- `scripts/csv_to_npz_hu_d03.py`: HU_D03 CSV to the `.npz` mjlab's tracking task reads (local file, no W&B).
-- `scripts/record_video.py`: headless rollout to `.mp4`.
-- `eval/`: per-checkpoint velocity-tracking analysis of the locomotion run.
-- `results/`: videos, GIF previews, training curves, checkpoints and ONNX policies of the runs shown above.
+```text
+hu_d03_rl/
+├── src/hu_d03_mjlab/              # Python package, registered with mjlab via the `mjlab.tasks` entry point
+│   ├── robot/
+│   │   ├── hu_d03_spec.py         # loads the LimX MJCF → serial-joint model (removes ankle/waist parallel
+│   │   │                          #   linkages, names collision geoms, adds foot sites + IMU); needs only `mujoco`
+│   │   ├── hu_d03_params.py       # armatures (from the LimX SRDF), effort limits, PD gains, home pose
+│   │   └── hu_d03_constants.py    # mjlab robot config
+│   └── tasks/
+│       ├── __init__.py            # registers the Velocity-* and Tracking-* tasks
+│       ├── velocity_env_cfgs.py   # locomotion envs (flat / rough), adapted from mjlab's G1
+│       ├── tracking_env_cfgs.py   # mimic envs (with / without state estimation)
+│       └── rl_cfgs.py             # PPO runner configs (G1 hyperparameters)
+├── scripts/
+│   ├── stand_test.py              # CPU stand test in plain MuJoCo
+│   ├── seed_g1_to_lafan_csv.py    # BONES-SEED G1 CSV (cm, Euler deg, 120 fps) → LAFAN1 G1 layout
+│   ├── retarget_g1_to_hu_d03.py   # G1 LAFAN1 CSV → HU_D03 CSV (joint-space transfer)
+│   ├── make_medley_hu_d03.py      # joins several HU_D03 CSVs into one clip (aligned heading/position,
+│   │                              #   smoothstep blends) so one policy learns several dances
+│   ├── csv_to_npz_hu_d03.py       # HU_D03 CSV → .npz read by mjlab's tracking task (local file, no W&B)
+│   └── record_video.py            # headless policy rollout → .mp4
+├── notebooks/                     # generated: re-run the build_*.py scripts after editing src/ or scripts/
+│   ├── train_hu_d03.ipynb         # Colab / Kaggle: stand test + all tasks
+│   ├── build_notebook.py          #   └─ its generator
+│   ├── nb_common.py               # shared helpers for the generators
+│   ├── locomotion/
+│   │   ├── kaggle_hu_d03_locomotion.ipynb   # long unattended Kaggle run, auto-resume
+│   │   └── build_kaggle_locomotion.py
+│   └── mimic/
+│       ├── kaggle_hu_d03_mimic.ipynb        # Kaggle mimic run on a BONES-SEED / LAFAN1 clip or medley
+│       └── build_kaggle_mimic.py
+├── eval/
+│   ├── evaluate.py                # per-checkpoint velocity tracking from the TensorBoard logs
+│   ├── tfevents.py                # minimal TensorBoard event reader (no tensorboard needed)
+│   ├── rows.json                  # evaluate.py output
+│   └── velocity_tracking.png
+├── results/                       # outputs of the runs shown above
+│   ├── videos/                    # full 1280×720 rollouts and reference motions
+│   ├── gifs/                      # README previews
+│   ├── curves/                    # training curves
+│   └── policies/                  # final .pt checkpoints, ONNX exports, motion .npz files
+├── third_party/                   # (not tracked) humanoid-description, mjlab
+└── pyproject.toml
+```
 
 ## Run the CPU checks locally
 

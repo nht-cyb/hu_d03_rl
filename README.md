@@ -3,7 +3,7 @@
 LimX Dynamics HU_D03 locomotion and mimic (motion tracking) tasks for
 [mjlab](https://github.com/mujocolab/mjlab), trained on a free Colab or Kaggle GPU.
 
-| Locomotion (velocity commands) | Ballet turn (mimic) | Dance medley (one policy, 6 clips) |
+| Locomotion (velocity commands) | Ballet turn (mimic) | Mimic dance medley (one policy, 6 clips) |
 |:---:|:---:|:---:|
 | [![locomotion](results/gifs/locomotion.gif)](results/videos/locomotion.mp4) | [![ballet](results/gifs/ballet_mimic.gif)](results/videos/ballet_mimic.mp4) | [![medley](results/gifs/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.gif)](results/videos/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.mp4) |
 

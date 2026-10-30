@@ -1,0 +1,16 @@
+[project]
+name = "hu-d03-mjlab"
+version = "0.1.0"
+description = "LimX HU_D03 locomotion and motion-tracking tasks for mjlab"
+requires-python = ">=3.10"
+dependencies = ["mjlab"]
+
+[project.entry-points."mjlab.tasks"]
+hu_d03 = "hu_d03_mjlab.tasks"
+
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

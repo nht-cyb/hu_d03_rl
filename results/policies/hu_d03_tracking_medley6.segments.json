@@ -1,0 +1,32 @@
+[
+ {
+  "clip": "walk_ff_loop_180_R_002__A046_hu_d03",
+  "start_s": 0.0,
+  "end_s": 16.9
+ },
+ {
+  "clip": "dance_hiphop_hip_hop_iv_R_002__A320_hu_d03",
+  "start_s": 17.9,
+  "end_s": 34.166666666666664
+ },
+ {
+  "clip": "dance_latino_mambo_chase_180_turn_R_fast_002__A312_hu_d03",
+  "start_s": 35.166666666666664,
+  "end_s": 46.266666666666666
+ },
+ {
+  "clip": "dance_vouge_the_duck_walk_variation_180_R_fast_002__A320_hu_d03",
+  "start_s": 47.266666666666666,
+  "end_s": 56.53333333333333
+ },
+ {
+  "clip": "dance_latino_jive_sequence_R_101__A321_hu_d03",
+  "start_s": 57.53333333333333,
+  "end_s": 82.9
+ },
+ {
+  "clip": "victory_dance_macarena_change_direction_R_loop_001__A321_hu_d03",
+  "start_s": 83.9,
+  "end_s": 112.36666666666666
+ }
+]

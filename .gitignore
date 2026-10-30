@@ -1,0 +1,7 @@
+third_party/
+data/
+logs/
+__pycache__/
+*.egg-info/
+train_results/
+.ruff_cache/

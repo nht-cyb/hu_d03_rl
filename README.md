@@ -237,15 +237,7 @@ Details worth knowing:
 
 ## Citation
 
-If you use this code or the trained policies, please cite this repository:
 
-```bibtex
-@misc{nguyen2026hud03rl,
-  title        = {{HU\_D03 RL}: Locomotion and Motion-Tracking Policies for the {LimX} {HU\_D03} Humanoid in mjlab},
-  author       = {Nguyen, Huyen Trang},
-  year         = {2026},
-  howpublished = {\url{https://github.com/nht-cyb/hu_d03_rl}}
-}
 ```
 
 This work builds on the following projects and datasets. Please cite them as well:

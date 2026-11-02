@@ -5,6 +5,7 @@ from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import (
   ContactMatch,
   ContactSensorCfg,
@@ -16,24 +17,30 @@ from mjlab.sensor import (
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
 from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
+from mjlab.terrains import config as terrain_cfg
 
 from hu_d03_mjlab.robot.hu_d03_constants import (
   FOOT_GEOMS,
   HU_D03_ACTION_SCALE,
   get_hu_d03_robot_cfg,
 )
+from hu_d03_mjlab.tasks import gait_rewards
 
 PELVIS = "base_link"
 TORSO = "waist_pitch_link"
 
 
-def hu_d03_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Create LimX HU_D03 rough terrain velocity configuration."""
+def _hu_d03_base_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Settings shared by the flat and rough tasks."""
   cfg = make_velocity_env_cfg()
 
-  cfg.sim.mujoco.ccd_iterations = 500
+  # mjlab's G1 uses 500 iterations and 70 contacts per env, too much for a T4's 15 GB. The
+  # collision buffers need about 40 kB (at 300 iterations) times nconmax * num_envs, once
+  # for each of the step and forward CUDA graphs: about 10 GB here, on top of about 2 GB.
+  cfg.sim.mujoco.ccd_iterations = 300
   cfg.sim.contact_sensor_maxmatch = 500
-  cfg.sim.nconmax = 70
+  # A pool shared by all envs, not a per-env cap; envs use about 4 on average.
+  cfg.sim.nconmax = 30
 
   cfg.scene.entities = {"robot": get_hu_d03_robot_cfg()}
 
@@ -181,9 +188,130 @@ def hu_d03_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
+def hu_d03_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Create LimX HU_D03 rough terrain velocity configuration with a human-like gait.
+
+  Meant to be warm-started from a flat policy (scripts/widen_flat_checkpoint.py), so
+  it starts on easy terrain and at speeds that policy already handles.
+  """
+  cfg = _hu_d03_base_env_cfg(play=play)
+
+  assert cfg.scene.terrain is not None
+  terrain = cfg.scene.terrain.terrain_generator
+  assert terrain is not None
+  # Terrains a person walks on; mjlab's 45 degree slopes would force an unnatural gait.
+  terrain.sub_terrains = {
+    "flat": terrain_cfg.flat(proportion=0.15),
+    # Robots spawn at the center of a tile: a pyramid's top, or the bottom of an inverted one.
+    "stairs_down": terrain_cfg.pyramid_stairs(
+      proportion=0.2, step_height_range=(0.02, 0.15), step_width=0.35
+    ),
+    "stairs_up": terrain_cfg.pyramid_stairs_inv(
+      proportion=0.2, step_height_range=(0.02, 0.15), step_width=0.35
+    ),
+    "slope_down": terrain_cfg.hf_pyramid_slope(proportion=0.1, slope_range=(0.0, 0.45)),
+    "slope_up": terrain_cfg.hf_pyramid_slope_inv(
+      proportion=0.1, slope_range=(0.0, 0.45)
+    ),
+    "random_rough": terrain_cfg.random_rough(proportion=0.1, noise_range=(0.01, 0.06)),
+    "waves": terrain_cfg.wave_terrain(proportion=0.1, amplitude_range=(0.0, 0.12)),
+    "obstacles": terrain_cfg.discrete_obstacles(
+      proportion=0.05, obstacle_height_range=(0.02, 0.12), num_obstacles=20
+    ),
+  }
+  cfg.scene.terrain.max_init_terrain_level = 2
+
+  # People walk forward far more than they strafe or back up, and they also run.
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+  twist_cmd.rel_forward_envs = 0.4
+  twist_cmd.ranges.lin_vel_x = (-0.8, 1.5)
+  twist_cmd.ranges.lin_vel_y = (-0.4, 0.4)
+  if not play:
+    cfg.curriculum["command_vel"].params["velocity_stages"] = [
+      {"step": 0, "lin_vel_x": (-0.8, 1.5), "ang_vel_z": (-0.5, 0.5)},
+      {"step": 1500 * 24, "lin_vel_x": (-1.0, 2.0), "ang_vel_z": (-0.7, 0.7)},
+      {"step": 4000 * 24, "lin_vel_x": (-1.0, 3.0), "lin_vel_y": (-0.5, 0.5)},
+    ]
+
+  # Tighter on the joints that made the flat gait stiff-armed and wide-hipped, looser
+  # on the shoulder pitch and waist yaw so that the arms and torso can counter-swing.
+  pose = cfg.rewards["pose"].params
+  pose["std_walking"] |= {
+    r".*hip_roll.*": 0.12,
+    r".*hip_yaw.*": 0.1,
+    r".*shoulder_pitch.*": 0.4,
+    r".*shoulder_roll.*": 0.08,
+    r".*shoulder_yaw.*": 0.08,
+    r".*elbow.*": 0.2,
+    r"head_.*": 0.05,
+    r".*waist_yaw.*": 0.25,
+  }
+  pose["std_running"] |= {
+    r".*hip_yaw.*": 0.15,
+    r".*shoulder_pitch.*": 0.7,
+    r".*shoulder_roll.*": 0.12,
+    r".*shoulder_yaw.*": 0.12,
+    r".*elbow.*": 0.5,
+    r"head_.*": 0.05,
+  }
+  pose["running_threshold"] = 1.8
+
+  cfg.rewards["upright"].weight = 1.5
+  cfg.rewards["air_time"].weight = 0.25
+  cfg.rewards["air_time"].params["threshold_min"] = 0.1
+  cfg.rewards["air_time"].params["command_threshold"] = 0.3
+  cfg.rewards["contact_pattern"] = RewardTermCfg(
+    func=gait_rewards.contact_pattern,
+    weight=0.5,
+    params={"sensor_name": "feet_ground_contact", "command_name": "twist"},
+  )
+  cfg.rewards["gait_symmetry"] = RewardTermCfg(
+    func=gait_rewards.gait_symmetry,
+    weight=-2.0,
+    params={"sensor_name": "feet_ground_contact", "command_name": "twist"},
+  )
+  cfg.rewards["arm_leg_swing"] = RewardTermCfg(
+    func=gait_rewards.arm_leg_swing,
+    weight=0.75,
+    params={
+      "command_name": "twist",
+      "std": 0.2,
+      "asset_cfg": SceneEntityCfg(
+        "robot",
+        joint_names=(
+          "left_shoulder_pitch_joint",
+          "right_shoulder_pitch_joint",
+          "left_hip_pitch_joint",
+          "right_hip_pitch_joint",
+        ),
+        preserve_order=True,
+      ),
+    },
+  )
+  feet = SceneEntityCfg("robot", site_names=("left_foot", "right_foot"), preserve_order=True)
+  cfg.rewards["stance_width"] = RewardTermCfg(
+    func=gait_rewards.stance_width,
+    weight=0.25,
+    params={"target": 0.22, "asset_cfg": feet},
+  )
+  # Home pose: 0.889 m with 0.5 rad knees; straight legs: 0.912 m.
+  cfg.rewards["leg_extension"] = RewardTermCfg(
+    func=gait_rewards.leg_extension,
+    weight=0.5,
+    params={"target_height": 0.9, "command_name": "twist", "asset_cfg": feet},
+  )
+  cfg.rewards["mechanical_power"] = RewardTermCfg(
+    func=gait_rewards.mechanical_power,
+    weight=-5.0e-4,
+  )
+
+  return cfg
+
+
 def hu_d03_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create LimX HU_D03 flat terrain velocity configuration."""
-  cfg = hu_d03_rough_env_cfg(play=play)
+  cfg = _hu_d03_base_env_cfg(play=play)
 
   cfg.sim.njmax = 300
   cfg.sim.mujoco.ccd_iterations = 50

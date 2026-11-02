@@ -3,11 +3,11 @@
 LimX Dynamics HU_D03 locomotion and mimic (motion tracking) tasks for
 [mjlab](https://github.com/mujocolab/mjlab), trained on a free Kaggle GPU.
 
-| Locomotion (velocity commands) | Ballet turn (mimic) | Mimic dance medley (one policy, 6 clips) |
-|:---:|:---:|:---:|
-| [![locomotion](results/gifs/locomotion.gif)](results/videos/locomotion.mp4) | [![ballet](results/gifs/ballet_mimic.gif)](results/videos/ballet_mimic.mp4) | [![medley](results/gifs/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.gif)](results/videos/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.mp4) |
+| Locomotion (velocity commands) | Varied terrain (15 cm stairs) | Ballet turn (mimic) | Mimic dance medley (one policy, 6 clips) |
+|:---:|:---:|:---:|:---:|
+| [![locomotion](results/gifs/locomotion.gif)](results/videos/locomotion.mp4) | [![stairs](results/gifs/rough_walk_stairs_up_hard.gif)](results/videos/rough_walk_stairs_up_hard.mp4) | [![ballet](results/gifs/ballet_mimic.gif)](results/videos/ballet_mimic.mp4) | [![medley](results/gifs/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.gif)](results/videos/medley_02_dance_hiphop_hip_hop_iv_R_002__A320_mimic.mp4) |
 
-Click a GIF to open the full-length 1280×720 video. All result videos are also in this
+Click a GIF to open the full-length video. The flat-ground and mimic videos are also in this
 [Google Drive folder](https://drive.google.com/drive/folders/174nsOWcwJ5Hc9CvAaFgBzb3cu3Fmen8P?usp=drive_link).
 
 ## Quick start
@@ -37,6 +37,9 @@ Click a GIF to open the full-length 1280×720 video. All result videos are also 
    ```bash
    python scripts/record_video.py Mjlab-Velocity-Flat-LimX-HU-D03 \
        --checkpoint-file results/policies/hu_d03_velocity_flat.pt --output-file walk.mp4
+   python scripts/record_video.py Mjlab-Velocity-Rough-LimX-HU-D03 \
+       --checkpoint-file results/policies/hu_d03_velocity_rough.pt \
+       --terrain stairs_up --difficulty 1 --forward-speed 0.8 --output-file stairs.mp4
    python scripts/record_video.py Mjlab-Tracking-Flat-LimX-HU-D03 \
        --checkpoint-file results/policies/hu_d03_tracking_ballet.pt \
        --motion-file results/policies/ballet_motion.npz --output-file ballet.mp4
@@ -63,16 +66,17 @@ python scripts/stand_test.py --seconds 10
 
 ## Results
 
-All three policies were trained for 10,000 PPO iterations with 4,096 parallel environments on one
-Kaggle GPU (about 6–8 h each).
+All policies were trained for 10,000 PPO iterations on one Kaggle GPU (about 6–8 h each), with 4,096 parallel
+environments (2,048 for varied terrain).
 
 Result videos: [results/videos/](results/videos/) or the [Google Drive folder](https://drive.google.com/drive/folders/174nsOWcwJ5Hc9CvAaFgBzb3cu3Fmen8P?usp=drive_link).
-The full training outputs (every checkpoint, TensorBoard logs, configs) are in the
+The full training outputs of the flat-ground and mimic runs (every checkpoint, TensorBoard logs, configs) are in the
 [training-results-v1 release](https://github.com/nht-cyb/hu_d03_rl/releases/tag/training-results-v1).
 
 | Run | Task | Training time | Final mean reward | Final episode length |
 |---|---|---|---|---|
 | Locomotion | `Mjlab-Velocity-Flat-LimX-HU-D03` | 5 h 56 min | 61.2 | 993 / 1000 steps |
+| Varied terrain | `Mjlab-Velocity-Rough-LimX-HU-D03` (warm start) | 6 h 53 min | 62.3 | 987 / 1000 steps |
 | Ballet turn | `Mjlab-Tracking-Flat-LimX-HU-D03` | 7 h 51 min | 40.5 | 500 / 500 steps |
 | Dance medley | `Mjlab-Tracking-Flat-LimX-HU-D03` (warm start) | 7 h 21 min | 34.2 | 486 / 500 steps |
 
@@ -96,6 +100,39 @@ turn rate 0.5 → 0.7 rad/s), which explains the step in the curves.
 Training curves: [results/curves/locomotion_curves.png](results/curves/locomotion_curves.png).
 The numbers above come from [eval/evaluate.py](eval/evaluate.py), which averages the TensorBoard
 logs over the 50 iterations before each checkpoint ([eval/rows.json](eval/rows.json)).
+
+### Locomotion on varied terrain
+
+A second velocity policy, warm-started from the flat one with [scripts/widen_flat_checkpoint.py](scripts/widen_flat_checkpoint.py),
+which adds a terrain height scan to its observations. It trains on flat ground, stairs and slopes (up and down), random
+rough ground, waves and low obstacles, with extra rewards for a human-like gait ([gait_rewards.py](src/hu_d03_mjlab/tasks/gait_rewards.py)).
+
+| Flat | Slope up, medium | Stairs up, medium |
+|:---:|:---:|:---:|
+| [![flat](results/gifs/rough_walk_flat.gif)](results/videos/rough_walk_flat.mp4) | [![slope up](results/gifs/rough_walk_slope_up_medium.gif)](results/videos/rough_walk_slope_up_medium.mp4) | [![stairs up medium](results/gifs/rough_walk_stairs_up_medium.gif)](results/videos/rough_walk_stairs_up_medium.mp4) |
+| **Stairs up, hard** | **Stairs down, medium** | **Stairs down, hard** |
+| [![stairs up hard](results/gifs/rough_walk_stairs_up_hard.gif)](results/videos/rough_walk_stairs_up_hard.mp4) | [![stairs down medium](results/gifs/rough_walk_stairs_down_medium.gif)](results/videos/rough_walk_stairs_down_medium.mp4) | [![stairs down hard](results/gifs/rough_walk_stairs_down_hard.gif)](results/videos/rough_walk_stairs_down_hard.mp4) |
+
+Each clip simulates 64 robots for 12 s on one terrain and a straight-line command, and the camera follows the first robot.
+Difficulty 1.0 is the hardest curriculum level (15 cm stairs). Numbers are in [eval/terrain_results.json](eval/terrain_results.json).
+
+| Terrain | Difficulty | Commanded speed | Mean forward speed | Robots that fell |
+|---|---|---|---|---|
+| Flat | 0.0 | 1.0 m/s | 0.90 m/s | 0 % |
+| Slope up | 0.5 | 1.0 m/s | 0.90 m/s | 0 % |
+| Stairs up | 0.5 | 0.8 m/s | 0.68 m/s | 0 % |
+| Stairs up | 1.0 | 0.8 m/s | 0.68 m/s | 0 % |
+| Stairs down | 0.5 | 0.8 m/s | 0.65 m/s | 0 % |
+| Stairs down | 1.0 | 0.8 m/s | 0.65 m/s | 0 % |
+
+- **Optimistic numbers:** robots start on a random tile and some, including the filmed one, walk off the terrain onto flat ground
+  before the clip ends. The GIFs show the first 6 s.
+- **Walking only:** this policy does not run yet, even though training commands reach 3 m/s.
+- **Not recorded in this run:** hard slopes, slopes down, random rough ground, waves and obstacles.
+
+Over the last 50 training iterations, on all terrains and the full command range (−1…3 m/s), 3.9 % of episodes end in a
+fall, the linear velocity error is 0.80 m/s and the yaw rate error 0.57 rad/s. The mean terrain level is 5.8 out of 9.
+Training curves: [results/curves/rough_curves.png](results/curves/rough_curves.png).
 
 ### Mimic: ballet turn
 
@@ -175,6 +212,8 @@ For long unattended runs on Kaggle (*Save Version → Save & Run All*, stops its
 resumes from the previous version's output) there are dedicated notebooks:
 
 - [notebooks/locomotion/kaggle_hu_d03_locomotion.ipynb](notebooks/locomotion/kaggle_hu_d03_locomotion.ipynb): `Mjlab-Velocity-Flat-LimX-HU-D03`
+- [notebooks/locomotion/kaggle_hu_d03_rough.ipynb](notebooks/locomotion/kaggle_hu_d03_rough.ipynb): `Mjlab-Velocity-Rough-LimX-HU-D03`
+  with a human-like gait on varied terrain, warm-started from the flat policy
 - [notebooks/mimic/kaggle_hu_d03_mimic.ipynb](notebooks/mimic/kaggle_hu_d03_mimic.ipynb): `Mjlab-Tracking-Flat-LimX-HU-D03`
   on a BONES-SEED clip found by text search (e.g. `SEED_SEARCH = "ballet"`; needs Hugging Face access and an
   `HF_TOKEN` Kaggle secret) or a LAFAN1 clip (`SOURCE = "lafan1"`)
@@ -184,6 +223,7 @@ The notebooks are generated: after editing `src/` or `scripts/`, run
 ```bash
 python notebooks/build_notebook.py
 python notebooks/locomotion/build_kaggle_locomotion.py
+python notebooks/locomotion/build_kaggle_rough.py
 python notebooks/mimic/build_kaggle_mimic.py
 ```
 
@@ -199,6 +239,7 @@ hu_d03_rl/
 │   └── tasks/
 │       ├── __init__.py          # registers the Velocity / Tracking tasks
 │       ├── velocity_env_cfgs.py # locomotion envs (flat, rough)
+│       ├── gait_rewards.py      # human-like gait rewards (rough)
 │       ├── tracking_env_cfgs.py # mimic envs
 │       └── rl_cfgs.py           # PPO runner configs
 ├── scripts/
@@ -207,12 +248,14 @@ hu_d03_rl/
 │   ├── retarget_g1_to_hu_d03.py # G1 CSV → HU_D03 CSV
 │   ├── make_medley_hu_d03.py    # join several clips into one medley
 │   ├── csv_to_npz_hu_d03.py     # HU_D03 CSV → mjlab motion .npz
+│   ├── widen_flat_checkpoint.py # flat checkpoint → rough warm start
+│   ├── make_terrain_overview.py # tile terrain clips into one video
 │   └── record_video.py          # headless rollout → .mp4
 ├── notebooks/                   # generated by the build_*.py scripts
 │   ├── train_hu_d03.ipynb       # all tasks, one notebook
 │   ├── build_notebook.py
 │   ├── nb_common.py
-│   ├── locomotion/              # long Kaggle locomotion run
+│   ├── locomotion/              # long Kaggle locomotion runs (flat, rough)
 │   └── mimic/                   # long Kaggle mimic run (clip or medley)
 ├── eval/                        # per-checkpoint locomotion + mimic analysis
 ├── results/
@@ -236,8 +279,6 @@ Details worth knowing:
 - After editing `src/` or `scripts/`, re-run the notebook builders (see above).
 
 ## Citation
-
-```
 
 This work builds on the following projects and datasets. Please cite them as well:
 

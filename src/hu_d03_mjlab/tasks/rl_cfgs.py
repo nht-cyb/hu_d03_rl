@@ -51,5 +51,9 @@ def hu_d03_velocity_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   return _runner_cfg("hu_d03_velocity", entropy_coef=0.01, save_interval=50)
 
 
+def hu_d03_velocity_rough_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  return _runner_cfg("hu_d03_velocity_rough", entropy_coef=0.01, save_interval=50)
+
+
 def hu_d03_tracking_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   return _runner_cfg("hu_d03_tracking", entropy_coef=0.005, save_interval=100)

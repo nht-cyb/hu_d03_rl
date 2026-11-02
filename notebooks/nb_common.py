@@ -18,6 +18,7 @@ PACKAGE_FILES = [
   "src/hu_d03_mjlab/robot/hu_d03_params.py",
   "src/hu_d03_mjlab/robot/hu_d03_constants.py",
   "src/hu_d03_mjlab/tasks/__init__.py",
+  "src/hu_d03_mjlab/tasks/gait_rewards.py",
   "src/hu_d03_mjlab/tasks/rl_cfgs.py",
   "src/hu_d03_mjlab/tasks/velocity_env_cfgs.py",
   "src/hu_d03_mjlab/tasks/tracking_env_cfgs.py",

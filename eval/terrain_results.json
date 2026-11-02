@@ -1,0 +1,68 @@
+[
+ {
+  "clip": "walk_flat",
+  "terrain": "flat",
+  "difficulty": 0.0,
+  "command": 1.0,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.8950216165060806
+ },
+ {
+  "clip": "walk_slope_up_medium",
+  "terrain": "slope_up",
+  "difficulty": 0.5,
+  "command": 1.0,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.8950068559000885
+ },
+ {
+  "clip": "walk_stairs_up_medium",
+  "terrain": "stairs_up",
+  "difficulty": 0.5,
+  "command": 0.8,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.6758555643757179
+ },
+ {
+  "clip": "walk_stairs_up_hard",
+  "terrain": "stairs_up",
+  "difficulty": 1.0,
+  "command": 0.8,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.6828357316677763
+ },
+ {
+  "clip": "walk_stairs_down_medium",
+  "terrain": "stairs_down",
+  "difficulty": 0.5,
+  "command": 0.8,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.6542029337088263
+ },
+ {
+  "clip": "walk_stairs_down_hard",
+  "terrain": "stairs_down",
+  "difficulty": 1.0,
+  "command": 0.8,
+  "num_envs": 64,
+  "seconds": 12.0,
+  "fell_percent": 0.0,
+  "camera_robot_fell": false,
+  "mean_forward_speed": 0.654610312717656
+ }
+]

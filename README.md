@@ -237,7 +237,6 @@ Details worth knowing:
 
 ## Citation
 
-
 ```
 
 This work builds on the following projects and datasets. Please cite them as well:
